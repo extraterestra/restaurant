@@ -2,12 +2,17 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 
+// Handle client-side routing for Render static sites
+if (sessionStorage.redirect) {
+  const redirect = sessionStorage.redirect;
+  sessionStorage.removeItem('redirect');
+  window.history.replaceState(null, '', redirect);
+}
+
 const rootElement = document.getElementById('root');
 if (!rootElement) {
   throw new Error("Could not find root element to mount to");
 }
-
-
 
 const root = ReactDOM.createRoot(rootElement);
 root.render(
