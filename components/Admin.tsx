@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+
 interface OrderItem {
   id: string;
   name: string;
@@ -29,7 +31,7 @@ export const Admin: React.FC = () => {
   const fetchOrders = async () => {
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:5001/api/orders');
+      const response = await fetch(`${API_BASE_URL}/api/orders`);
       if (!response.ok) {
         throw new Error('Failed to fetch orders');
       }
@@ -52,7 +54,7 @@ export const Admin: React.FC = () => {
 
   const updateOrderStatus = async (orderId: number, newStatus: string) => {
     try {
-      const response = await fetch(`http://localhost:5001/api/orders/${orderId}/status`, {
+      const response = await fetch(`${API_BASE_URL}/api/orders/${orderId}/status`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

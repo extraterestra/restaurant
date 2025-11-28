@@ -2,6 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { CartItem } from '../types';
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+
 interface CheckoutModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -68,7 +70,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, o
         total: total
       };
 
-      const response = await fetch('http://localhost:5001/api/orders', {
+      const response = await fetch(`${API_BASE_URL}/api/orders`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
