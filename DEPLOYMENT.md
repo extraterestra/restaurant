@@ -16,11 +16,17 @@ Render is ideal for deploying both frontend and backend together with a PostgreS
 2. Click **"New +"** → **"PostgreSQL"**
 3. Configure:
    - **Name**: `restaurant-db`
-   - **Database**: `restaurant_db`
-   - **User**: `restaurant_user`
+   - **Database**: `restaurant_db` (auto-filled, you can change)
+   - **User**: `restaurant_user` (auto-filled, you can change)
+   - **Region**: Choose closest to you
+   - **PostgreSQL Version**: Latest (default)
    - **Plan**: Free (or choose paid)
 4. Click **"Create Database"**
-5. Copy the **Internal Database URL** (you'll need this for the backend)
+5. Wait for database to be created (takes 1-2 minutes)
+6. Once created, go to the database dashboard
+7. In the **"Connections"** section, find **"Internal Database URL"**
+8. **Copy the Internal Database URL** (format: `postgresql://user:password@hostname:5432/database`)
+   - ⚠️ **Important**: Use the **Internal** URL, not the External one (faster and no connection limits)
 
 ### Step 2: Deploy Backend Server
 
@@ -28,19 +34,22 @@ Render is ideal for deploying both frontend and backend together with a PostgreS
 2. Connect your GitHub repository: `extraterestra/restaurant`
 3. Configure the service:
    - **Name**: `restaurant-backend`
-   - **Root Directory**: `server`
-   - **Environment**: `Node`
+   - **Region**: Choose closest to you (e.g., `Oregon (US West)`)
+   - **Branch**: `main` (or your default branch)
+   - **Root Directory**: `server` ⚠️ **Important: Set this to `server`**
+   - **Runtime**: Will auto-detect as `Node` (you don't need to set this manually)
    - **Build Command**: `npm install && npm run build`
    - **Start Command**: `node dist/index.js`
-4. Add Environment Variables:
-   ```
-   PORT=5001
-   DATABASE_URL=<paste-internal-database-url-from-step-1>
-   NODE_ENV=production
-   ```
-5. Click **"Create Web Service"**
-6. Wait for deployment to complete
-7. Copy the service URL (e.g., `https://restaurant-backend.onrender.com`)
+4. Scroll down to **"Environment Variables"** section and click **"Add Environment Variable"**:
+   - Add: `PORT` = `5001`
+   - Add: `DATABASE_URL` = `<paste-internal-database-url-from-step-1>`
+   - Add: `NODE_ENV` = `production`
+   - Add: `FRONTEND_URL` = `https://restaurant-frontend.onrender.com` (or your frontend URL)
+5. Scroll down and click **"Create Web Service"**
+6. Wait for deployment to complete (first build may take 5-10 minutes)
+7. Copy the service URL from the top of the page (e.g., `https://restaurant-backend.onrender.com`)
+
+**Note**: If you don't see "Root Directory" field, look for "Advanced" settings or it might be in a collapsible section. The Runtime/Environment field is usually auto-detected from your `package.json` file.
 
 ### Step 3: Deploy Frontend
 
@@ -48,16 +57,17 @@ Render is ideal for deploying both frontend and backend together with a PostgreS
 2. Connect your GitHub repository: `extraterestra/restaurant`
 3. Configure:
    - **Name**: `restaurant-frontend`
-   - **Root Directory**: `.` (root)
+   - **Region**: Same as backend (for better performance)
+   - **Branch**: `main` (or your default branch)
+   - **Root Directory**: Leave empty or `.` (root directory)
    - **Build Command**: `npm install && npm run build`
    - **Publish Directory**: `dist`
-4. Add Environment Variables:
-   ```
-   VITE_API_URL=https://restaurant-backend.onrender.com
-   GEMINI_API_KEY=<your-gemini-api-key>
-   ```
+4. Scroll down to **"Environment Variables"** section and click **"Add Environment Variable"**:
+   - Add: `VITE_API_URL` = `https://restaurant-backend.onrender.com` (use your actual backend URL from Step 2)
+   - Add: `GEMINI_API_KEY` = `<your-gemini-api-key>`
 5. Click **"Create Static Site"**
-6. Wait for deployment
+6. Wait for deployment (first build may take 5-10 minutes)
+7. Your frontend will be available at `https://restaurant-frontend.onrender.com`
 
 ### Step 4: Update Backend CORS (if needed)
 
