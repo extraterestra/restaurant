@@ -36,7 +36,7 @@
 **Advanced Settings** (click to expand if hidden):
 - **Root Directory**: Type `server` ⚠️ **This is critical!**
 - **Runtime**: Auto-detected (shows "Node")
-- **Build Command**: `npm install && npm run build`
+- **Build Command**: `npm install --include=dev && npm run build`
 - **Start Command**: `node dist/index.js`
 
 **Environment Variables** (scroll down):

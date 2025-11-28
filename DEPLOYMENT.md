@@ -38,7 +38,7 @@ Render is ideal for deploying both frontend and backend together with a PostgreS
    - **Branch**: `main` (or your default branch)
    - **Root Directory**: `server` ⚠️ **Important: Set this to `server`**
    - **Runtime**: Will auto-detect as `Node` (you don't need to set this manually)
-   - **Build Command**: `npm install && npm run build`
+   - **Build Command**: `npm install --include=dev && npm run build`
    - **Start Command**: `node dist/index.js`
 4. Scroll down to **"Environment Variables"** section and click **"Add Environment Variable"**:
    - Add: `PORT` = `5001`
