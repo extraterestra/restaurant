@@ -19,6 +19,7 @@
 8. Go to **"Connections"** tab
 9. Copy the **"Internal Database URL"** (starts with `postgresql://`)
 
+
 ---
 
 ### Step 2: Deploy Backend (Web Service)
