@@ -95,7 +95,41 @@ docker-compose up -d
 
 ## 🚀 Deployment
 
-### Railway (Recommended)
+### 🌐 Production (Railway)
+
+**Live Application:**
+- **Frontend**: https://frontend-production-64e1.up.railway.app
+- **Backend API**: https://backend-production-40df.up.railway.app/api/orders
+- **Admin Panel**: https://frontend-production-64e1.up.railway.app/admin
+- **Database**: PostgreSQL (Railway managed)
+- **Branch**: `main` (auto-deploys on push)
+
+### 💻 Local Development
+
+**Using Docker (Recommended):**
+```bash
+docker-compose up -d
+```
+- **Frontend**: http://localhost:3000
+- **Backend**: http://localhost:5001
+- **Database**: PostgreSQL (Docker container on port 5433)
+
+### 🔄 Git Workflow
+
+```
+feature branch → develop (staging) → main (production)
+     ↓              ↓                    ↓
+  (local)      (Railway Test)      (Railway Prod)
+```
+
+**Deployment Process:**
+1. Develop on feature branches
+2. Merge to `develop` for testing (staging environment)
+3. Merge to `main` for production (triggers automatic Railway deployment)
+
+---
+
+### Railway Deployment Guide
 
 Deploy to Railway with managed PostgreSQL and automatic HTTPS:
 
