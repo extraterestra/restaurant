@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { AuthSession } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
 
@@ -27,12 +28,36 @@ export const Admin: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [session, setSession] = useState<AuthSession | null>(null);
+
+  const checkSession = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/auth/session`, {
+        credentials: 'include',
+      });
+      const data = await response.json();
+      setSession(data);
+
+      if (!data.isAuthenticated) {
+        window.location.href = '/admin';
+      }
+    } catch (err) {
+      console.error('Error checking session:', err);
+      window.location.href = '/admin';
+    }
+  };
 
   const fetchOrders = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_BASE_URL}/api/orders`);
+      const response = await fetch(`${API_BASE_URL}/api/orders`, {
+        credentials: 'include',
+      });
       if (!response.ok) {
+        if (response.status === 401) {
+          window.location.href = '/admin';
+          return;
+        }
         throw new Error('Failed to fetch orders');
       }
       const data = await response.json();
@@ -47,10 +72,23 @@ export const Admin: React.FC = () => {
   };
 
   useEffect(() => {
+    checkSession();
     fetchOrders();
     const interval = setInterval(fetchOrders, 5000); // Refresh every 5 seconds
     return () => clearInterval(interval);
   }, []);
+
+  const handleLogout = async () => {
+    try {
+      await fetch(`${API_BASE_URL}/api/auth/logout`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+      window.location.href = '/admin';
+    } catch (err) {
+      console.error('Error logging out:', err);
+    }
+  };
 
   const updateOrderStatus = async (orderId: number, newStatus: string) => {
     try {
@@ -59,10 +97,15 @@ export const Admin: React.FC = () => {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify({ status: newStatus }),
       });
 
       if (!response.ok) {
+        if (response.status === 403) {
+          alert('You do not have permission to update orders');
+          return;
+        }
         throw new Error('Failed to update order status');
       }
 
@@ -143,15 +186,40 @@ export const Admin: React.FC = () => {
           <div className="px-6 py-4 bg-gray-900 text-white flex justify-between items-center">
             <div>
               <h1 className="text-2xl font-bold">Panel Administracyjny</h1>
-              <p className="text-gray-400 text-sm mt-0.5">Zarządzanie zamówieniami</p>
+              <p className="text-gray-400 text-sm mt-0.5">
+                Zarządzanie zamówieniami
+                {session?.user && (
+                  <span className="ml-2">
+                    • Logged in as <span className="font-semibold">{session.user.username}</span> ({session.user.role})
+                  </span>
+                )}
+              </p>
             </div>
-            <button
-              onClick={fetchOrders}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
-            >
-              <i className="fas fa-sync-alt mr-2"></i>
-              Odśwież
-            </button>
+            <div className="flex gap-3">
+              {session?.user?.role === 'admin' && (
+                <a
+                  href="/admin/users"
+                  className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
+                >
+                  <i className="fas fa-users mr-2"></i>
+                  User Management
+                </a>
+              )}
+              <button
+                onClick={fetchOrders}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
+              >
+                <i className="fas fa-sync-alt mr-2"></i>
+                Odśwież
+              </button>
+              <button
+                onClick={handleLogout}
+                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
+              >
+                <i className="fas fa-sign-out-alt mr-2"></i>
+                Logout
+              </button>
+            </div>
           </div>
 
           {error && (
@@ -236,7 +304,11 @@ export const Admin: React.FC = () => {
                         <select
                           value={order.status}
                           onChange={(e) => updateOrderStatus(order.id, e.target.value)}
-                          className={`text-xs font-semibold px-3 py-1.5 rounded-lg border-0 outline-none cursor-pointer transition-colors ${getStatusColor(order.status)} focus:ring-2 focus:ring-emerald-500`}
+                          disabled={session?.user?.role === 'read_only'}
+                          className={`text-xs font-semibold px-3 py-1.5 rounded-lg border-0 outline-none transition-colors ${getStatusColor(order.status)} ${session?.user?.role === 'read_only'
+                              ? 'opacity-50 cursor-not-allowed'
+                              : 'cursor-pointer focus:ring-2 focus:ring-emerald-500'
+                            }`}
                         >
                           {statusOptions.map((option) => (
                             <option key={option.value} value={option.value}>

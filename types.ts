@@ -24,6 +24,19 @@ export interface CartItem extends Product {
   quantity: number;
 }
 
+export interface User {
+  id: number;
+  username: string;
+  role: 'admin' | 'read_only' | 'write';
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AuthSession {
+  isAuthenticated: boolean;
+  user: User | null;
+}
+
 export interface CheckoutFormData {
   name: string;
   address: string;

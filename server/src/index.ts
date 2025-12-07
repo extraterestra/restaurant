@@ -1,6 +1,8 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import session from 'express-session';
+import bcrypt from 'bcryptjs';
 import { initDb, pool } from './db.js';
 
 dotenv.config();
@@ -28,8 +30,253 @@ app.use(cors({
 }));
 app.use(express.json());
 
+// Session configuration
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'restaurant-secret-key-change-in-production',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+    httpOnly: true,
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+  }
+}));
+
 // Initialize database
 initDb().catch(console.error);
+
+// Extend session type
+declare module 'express-session' {
+  interface SessionData {
+    userId: number;
+    username: string;
+    role: string;
+  }
+}
+
+// Authentication middleware
+const requireAuth = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+  if (!req.session.userId) {
+    return res.status(401).json({ error: 'Authentication required' });
+  }
+  next();
+};
+
+// Admin-only middleware
+const requireAdmin = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+  if (!req.session.userId || req.session.role !== 'admin') {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+  next();
+};
+
+// Write access middleware (admin or write role)
+const requireWriteAccess = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+  if (!req.session.userId || (req.session.role !== 'admin' && req.session.role !== 'write')) {
+    return res.status(403).json({ error: 'Write access required' });
+  }
+  next();
+};
+
+// ============ Authentication Endpoints ============
+
+// Login
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    console.log('Login attempt for:', username);
+
+    if (!username || !password) {
+      console.log('Missing credentials');
+      return res.status(400).json({ error: 'Username and password required' });
+    }
+
+    const result = await pool.query(
+      'SELECT * FROM users WHERE username = $1',
+      [username]
+    );
+
+    if (result.rows.length === 0) {
+      console.log('User not found:', username);
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    const user = result.rows[0];
+    const validPassword = await bcrypt.compare(password, user.password_hash);
+    console.log('Password valid:', validPassword, 'for user:', username);
+
+    if (!validPassword) {
+      console.log('Password mismatch for:', username);
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    // Set session
+    req.session.userId = user.id;
+    req.session.username = user.username;
+    req.session.role = user.role;
+
+    console.log('Login successful for:', username);
+
+    res.json({
+      id: user.id,
+      username: user.username,
+      role: user.role
+    });
+  } catch (error) {
+    console.error('Error logging in:', error);
+    res.status(500).json({ error: 'Failed to login' });
+  }
+});
+
+// Logout
+app.post('/api/auth/logout', (req, res) => {
+  req.session.destroy((err) => {
+    if (err) {
+      return res.status(500).json({ error: 'Failed to logout' });
+    }
+    res.json({ message: 'Logged out successfully' });
+  });
+});
+
+// Check session
+app.get('/api/auth/session', (req, res) => {
+  if (req.session.userId) {
+    res.json({
+      isAuthenticated: true,
+      user: {
+        id: req.session.userId,
+        username: req.session.username,
+        role: req.session.role
+      }
+    });
+  } else {
+    res.json({ isAuthenticated: false, user: null });
+  }
+});
+
+// ============ User Management Endpoints (Admin only) ============
+
+// Get all users
+app.get('/api/users', requireAdmin, async (req, res) => {
+  try {
+    const result = await pool.query(
+      'SELECT id, username, role, created_at, updated_at FROM users ORDER BY created_at DESC'
+    );
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    res.status(500).json({ error: 'Failed to fetch users' });
+  }
+});
+
+// Create user
+app.post('/api/users', requireAdmin, async (req, res) => {
+  try {
+    const { username, password, role } = req.body;
+
+    if (!username || !password || !role) {
+      return res.status(400).json({ error: 'Username, password, and role required' });
+    }
+
+    if (!['admin', 'read_only', 'write'].includes(role)) {
+      return res.status(400).json({ error: 'Invalid role' });
+    }
+
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    const result = await pool.query(
+      'INSERT INTO users (username, password_hash, role) VALUES ($1, $2, $3) RETURNING id, username, role, created_at, updated_at',
+      [username, passwordHash, role]
+    );
+
+    res.status(201).json(result.rows[0]);
+  } catch (error: any) {
+    console.error('Error creating user:', error);
+    if (error.code === '23505') { // Unique violation
+      return res.status(409).json({ error: 'Username already exists' });
+    }
+    res.status(500).json({ error: 'Failed to create user' });
+  }
+});
+
+// Update user
+app.patch('/api/users/:id', requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { username, password, role } = req.body;
+
+    let query = 'UPDATE users SET updated_at = CURRENT_TIMESTAMP';
+    const values: any[] = [];
+    let paramCount = 1;
+
+    if (username) {
+      query += `, username = $${paramCount}`;
+      values.push(username);
+      paramCount++;
+    }
+
+    if (password) {
+      const passwordHash = await bcrypt.hash(password, 10);
+      query += `, password_hash = $${paramCount}`;
+      values.push(passwordHash);
+      paramCount++;
+    }
+
+    if (role) {
+      if (!['admin', 'read_only', 'write'].includes(role)) {
+        return res.status(400).json({ error: 'Invalid role' });
+      }
+      query += `, role = $${paramCount}`;
+      values.push(role);
+      paramCount++;
+    }
+
+    query += ` WHERE id = $${paramCount} RETURNING id, username, role, created_at, updated_at`;
+    values.push(id);
+
+    const result = await pool.query(query, values);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.json(result.rows[0]);
+  } catch (error: any) {
+    console.error('Error updating user:', error);
+    if (error.code === '23505') {
+      return res.status(409).json({ error: 'Username already exists' });
+    }
+    res.status(500).json({ error: 'Failed to update user' });
+  }
+});
+
+// Delete user
+app.delete('/api/users/:id', requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Prevent deleting yourself
+    if (parseInt(id) === req.session.userId) {
+      return res.status(400).json({ error: 'Cannot delete your own account' });
+    }
+
+    const result = await pool.query(
+      'DELETE FROM users WHERE id = $1 RETURNING id',
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.json({ message: 'User deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting user:', error);
+    res.status(500).json({ error: 'Failed to delete user' });
+  }
+});
+
+// ============ Order Endpoints (Protected) ============
 
 // Create order
 app.post('/api/orders', async (req, res) => {
@@ -55,7 +302,7 @@ app.post('/api/orders', async (req, res) => {
 });
 
 // Get all orders
-app.get('/api/orders', async (req, res) => {
+app.get('/api/orders', requireAuth, async (req, res) => {
   try {
     const result = await pool.query(
       'SELECT * FROM orders ORDER BY created_at DESC'
@@ -68,7 +315,7 @@ app.get('/api/orders', async (req, res) => {
 });
 
 // Update order status
-app.patch('/api/orders/:id/status', async (req, res) => {
+app.patch('/api/orders/:id/status', requireWriteAccess, async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
