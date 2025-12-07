@@ -28,7 +28,7 @@ services:
     environment:
       DATABASE_URL: postgresql://restaurant_user:restaurant_password@postgres:5432/restaurant_db
       PORT: 5001
-      NODE_ENV: production
+      NODE_ENV: development
       FRONTEND_URL: http://localhost:3000
     ports:
       - "5001:5001"
@@ -43,7 +43,7 @@ services:
   frontend:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.production
       args:
         - VITE_API_URL=http://localhost:5001
     container_name: restaurant-frontend
