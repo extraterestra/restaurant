@@ -37,6 +37,11 @@ app.use(cors({
 }));
 app.use(express.json());
 
+// Trust proxy for correct secure cookies when behind a reverse proxy (e.g. Railway)
+// This is required so that express-session can set `secure` cookies based on
+// the `X-Forwarded-Proto: https` header from the proxy.
+app.set('trust proxy', 1);
+
 // Session configuration
 const isProduction = process.env.NODE_ENV === 'production';
 app.use(session({

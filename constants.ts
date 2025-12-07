@@ -79,7 +79,7 @@ export const MENU_ITEMS: Product[] = [
     calories: 580,
     description: 'Chrupiący kurczak w złocistej panierce z sosem majonezowym i świeżą sałatą.',
     ingredients: ['Kurczak Panierowany', 'Sałata', 'Pomidor', 'Majonez', 'Bułka Brioche'],
-    image: 'https://images.unsplash.com/photo-1615297787862-560413148d0c?q=80&w=800&auto=format&fit=crop',
+    image: 'https://i.imgur.com/IavBLF8.jpg',
     isSpicy: false
   },
 
