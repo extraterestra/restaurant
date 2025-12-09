@@ -9,7 +9,7 @@ interface HeaderProps {
 }
 
 export const Header: React.FC<HeaderProps> = ({ cartCount, onOpenCart, onCategorySelect }) => {
-  
+
   const handleNavClick = (category: string) => {
     onCategorySelect(category);
     const menuSection = document.getElementById('menu-section');
@@ -23,29 +23,29 @@ export const Header: React.FC<HeaderProps> = ({ cartCount, onOpenCart, onCategor
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-20">
           {/* Logo */}
-          <div 
-            className="flex-shrink-0 flex items-center gap-3 cursor-pointer group"
+          <div
+            className="flex-shrink-0 flex items-center gap-2 cursor-pointer group"
             onClick={() => handleNavClick(Category.ALL)}
           >
             {/* Custom SVG Logo for SIVIK */}
-            <div className="relative w-12 h-12 transform group-hover:scale-105 transition-transform duration-300">
+            <div className="relative w-10 h-10 transform group-hover:scale-105 transition-transform duration-300">
               <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full drop-shadow-sm">
-                 {/* Bottom Green Line */}
-                 <path d="M15 92 H85" stroke="#84cc16" strokeWidth="6" strokeLinecap="round" />
-                 
-                 {/* Left Black Stroke (Serif V Leg) */}
-                 <path d="M22 10 H42 L52 82 H44 L32 35 C30 20 28 15 22 10 Z" fill="#111827" />
-                 
-                 {/* Right Green Leaves (Double Leaf Shape) */}
-                 <path d="M51 82 Q58 50 55 10 Q68 25 72 38 Q82 28 92 28 Q78 55 51 82 Z" fill="#84cc16" />
+                {/* Bottom Green Line */}
+                <path d="M15 92 H85" stroke="#84cc16" strokeWidth="6" strokeLinecap="round" />
+
+                {/* Left Black Stroke (Serif V Leg) */}
+                <path d="M22 10 H42 L52 82 H44 L32 35 C30 20 28 15 22 10 Z" fill="#111827" />
+
+                {/* Right Green Leaves (Double Leaf Shape) */}
+                <path d="M51 82 Q58 50 55 10 Q68 25 72 38 Q82 28 92 28 Q78 55 51 82 Z" fill="#84cc16" />
               </svg>
             </div>
-            
-            <div className="flex flex-col">
-              <span className="font-bold text-2xl tracking-[0.2em] text-gray-900 leading-none">
+
+            <div className="flex flex-col -space-y-1">
+              <span className="font-bold text-xl tracking-[0.1em] text-gray-900 leading-none">
                 SIVIK
               </span>
-              <span className="text-sm text-gray-500 font-script -mt-1 ml-0.5">
+              <span className="text-[10px] text-gray-500 font-script ml-0.5">
                 Restauracja
               </span>
             </div>
